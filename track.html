@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Localização Compartilhada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        #map { height: 100vh; }
+        .location-card {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="location-card bg-white/90 backdrop-blur-sm rounded-xl shadow-xl p-4 w-80">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+            <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+            Localização Atual
+        </h2>
+        
+        <div id="locationInfo" class="space-y-2">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                <span id="statusText">Obtendo localização...</span>
+            </div>
+            <div id="coords" class="hidden">
+                <div class="flex items-center">
+                    <i class="fas fa-latitude text-gray-500 mr-2"></i>
+                    <span id="latitude"></span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-longitude text-gray-500 mr-2"></i>
+                    <span id="longitude"></span>
+                </div>
+            </div>
+            <div id="address" class="hidden">
+                <div class="flex items-start">
+                    <i class="fas fa-map text-gray-500 mr-2 mt-1"></i>
+                    <span id="addressText"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        // Get tracking code from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingCode = urlParams.get('code');
+        
+        // Initialize map
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Geolocation
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    updateLocation(latitude, longitude);
+                },
+                (error) => {
+                    document.getElementById('statusText').textContent = 
+                        'Erro: ' + (error.message || 'Permissão de localização negada');
+                    document.getElementById('statusText').classList.add('text-red-500');
+                }
+            );
+        } else {
+            document.getElementById('statusText').textContent = 
+                'Geolocalização não suportada pelo navegador';
+            document.getElementById('statusText').classList.add('text-red-500');
+        }
+
+        function updateLocation(lat, lng) {
+            // Update map
+            map.setView([lat, lng], 15);
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup('Você está aqui!')
+                .openPopup();
+
+            // Update info card
+            document.getElementById('statusText').textContent = 'Localização encontrada!';
+            document.getElementById('statusText').classList.add('text-green-500');
+            
+            document.getElementById('latitude').textContent = `Latitude: ${lat.toFixed(6)}`;
+            document.getElementById('longitude').textContent = `Longitude: ${lng.toFixed(6)}`;
+            document.getElementById('coords').classList.remove('hidden');
+
+            // Get address (reverse geocoding)
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address) {
+                        const addressParts = [];
+                        if (data.address.road) addressParts.push(data.address.road);
+                        if (data.address.city) addressParts.push(data.address.city);
+                        if (data.address.state) addressParts.push(data.address.state);
+                        if (data.address.country) addressParts.push(data.address.country);
+                        
+                        document.getElementById('addressText').textContent = addressParts.join(', ');
+                        document.getElementById('address').classList.remove('hidden');
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('addressText').textContent = 'Endereço não disponível';
+                    document.getElementById('address').classList.remove('hidden');
+                });
+        }
+    </script>
+</body>
+</html>
