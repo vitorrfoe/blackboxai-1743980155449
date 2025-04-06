@@ -54,7 +54,7 @@
     <script>
         // Get tracking code from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const trackingCode = urlParams.get('code');
+        let trackingCode = urlParams.get('code');
         
         // Initialize map
         const map = L.map('map').setView([0, 0], 2);
@@ -81,6 +81,9 @@
             document.getElementById('statusText').classList.add('text-red-500');
         }
 
+        // Variável para controle das atualizações
+        let locationUpdateInterval;
+
         function updateLocation(lat, lng) {
             // Update map
             map.setView([lat, lng], 15);
@@ -95,6 +98,19 @@
             document.getElementById('latitude').textContent = `Latitude: ${lat.toFixed(6)}`;
             document.getElementById('longitude').textContent = `Longitude: ${lng.toFixed(6)}`;
             document.getElementById('coords').classList.remove('hidden');
+
+            // Enviar localização para o servidor
+            fetch(`/update-location?code=${trackingCode}&lat=${lat}&lng=${lng}`)
+                .catch(err => console.error('Erro ao enviar localização:', err));
+
+            // Atualizar a cada 10 segundos
+            clearInterval(locationUpdateInterval);
+            locationUpdateInterval = setInterval(() => {
+                navigator.geolocation.getCurrentPosition(
+                    pos => updateLocation(pos.coords.latitude, pos.coords.longitude),
+                    err => console.error('Erro ao atualizar:', err)
+                );
+            }, 10000);
 
             // Get address (reverse geocoding)
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
