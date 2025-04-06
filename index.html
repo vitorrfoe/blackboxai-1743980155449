@@ -41,17 +41,42 @@
                     Gerar Link
                 </button>
                 
-                <div id="linkContainer" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <p class="text-sm text-gray-500 mb-2">Compartilhe este link:</p>
-                    <div class="flex items-center">
-                        <input id="generatedLink" type="text" readonly 
-                               class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-l-lg bg-white">
-                        <button id="copyBtn" 
-                                class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-r-lg">
-                            <i class="fas fa-copy"></i>
-                        </button>
+                <div id="linkContainer" class="hidden mt-4 space-y-4">
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p class="text-sm text-gray-500 mb-2">Compartilhe este link:</p>
+                        <div class="flex items-center">
+                            <input id="generatedLink" type="text" readonly 
+                                   class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-l-lg bg-white">
+                            <button id="copyBtn" 
+                                    class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-r-lg">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-600 mb-2">Para monitorar esta localização:</p>
+                        <a id="monitorLink" href="#" 
+                           class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                            <i class="fas fa-eye mr-2"></i>
+                            Abrir Painel de Monitoramento
+                        </a>
                     </div>
                 </div>
+
+                <script>
+                    document.getElementById('generateBtn').addEventListener('click', function() {
+                        const linkName = document.getElementById('linkName').value.trim();
+                        const randomId = Math.random().toString(36).substring(2, 8);
+                        const trackingCode = linkName ? `${linkName}_${randomId}` : randomId;
+                        const trackingUrl = `${window.location.origin}/track.html?code=${trackingCode}`;
+                        const monitorUrl = `${window.location.origin}/monitor.html?code=${trackingCode}`;
+                        
+                        document.getElementById('generatedLink').value = trackingUrl;
+                        document.getElementById('monitorLink').href = monitorUrl;
+                        document.getElementById('linkContainer').classList.remove('hidden');
+                    });
+                </script>
             </div>
         </div>
     </div>
