@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitorar Localização</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-map-marked-alt text-blue-500 mr-2"></i>
+                Monitoramento de Localização
+            </h1>
+            
+            <div class="mb-4">
+                <p class="text-gray-600">Código de rastreamento: <span id="trackingCode" class="font-mono bg-gray-100 px-2 py-1 rounded"></span></p>
+            </div>
+
+            <div id="map" class="h-96 w-full rounded-lg border border-gray-200"></div>
+            
+            <div class="mt-4 bg-blue-50 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold mb-2 flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    Status
+                </h2>
+                <div id="statusInfo">
+                    <p id="statusText" class="text-gray-700">Aguardando primeira atualização de localização...</p>
+                    <p id="coordinates" class="hidden mt-2">
+                        <span class="font-semibold">Latitude:</span> <span id="latitude"></span><br>
+                        <span class="font-semibold">Longitude:</span> <span id="longitude"></span>
+                    </p>
+                    <p id="lastUpdate" class="text-sm text-gray-500 mt-2 hidden"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackingCode = urlParams.get('code');
+        document.getElementById('trackingCode').textContent = trackingCode;
+
+        // Inicializar mapa
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        let marker = null;
+        let updateInterval;
+
+        function fetchLocation() {
+            fetch(`/get-location?code=${trackingCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.lat && data.lng) {
+                        // Atualizar mapa
+                        map.setView([data.lat, data.lng], 15);
+                        if (marker) map.removeLayer(marker);
+                        marker = L.marker([data.lat, data.lng])
+                            .addTo(map)
+                            .bindPopup('Localização atual');
+                        
+                        // Atualizar informações
+                        document.getElementById('statusText').textContent = 'Localização recebida com sucesso';
+                        document.getElementById('latitude').textContent = data.lat.toFixed(6);
+                        document.getElementById('longitude').textContent = data.lng.toFixed(6);
+                        document.getElementById('coordinates').classList.remove('hidden');
+                        document.getElementById('lastUpdate').textContent = 
+                            `Última atualização: ${new Date().toLocaleTimeString()}`;
+                        document.getElementById('lastUpdate').classList.remove('hidden');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar localização:', error);
+                    document.getElementById('statusText').textContent = 
+                        'Erro ao buscar localização. Tentando novamente...';
+                });
+        }
+
+        // Verificar a cada 3 segundos
+        updateInterval = setInterval(fetchLocation, 3000);
+        fetchLocation(); // Primeira chamada imediata
+
+        // Limpar intervalo quando a página for fechada
+        window.addEventListener('beforeunload', () => {
+            clearInterval(updateInterval);
+        });
+    </script>
+</body>
+</html>
